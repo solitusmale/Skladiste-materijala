@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Evidencija materijala</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        form { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; }
+        label { display: block; margin-top: 5px; }
+        input[type="text"], input[type="number"], input[type="date"] { width: 200px; }
+        .result { margin-top: 10px; color: green; }
+        .warning { color: red; }
+    </style>
+</head>
+<body>
+
+<h2>Dodavanje materijala</h2>
+<form id="materialForm">
+    <label>Naziv: <input type="text" name="mat_name" required></label>
+    <label>Tip: <input type="text" name="mat_type"></label>
+    <label>Proizvođač: <input type="text" name="manufacturer"></label>
+    <label>Količina: <input type="number" step="0.01" name="quantity" required></label>
+    <label>Minimalna količina: <input type="number" step="0.01" name="min_quantity" required></label>
+    <label>Jedinica mere: <input type="text" name="unit" required></label>
+    <button type="submit">Dodaj materijal</button>
+    <div class="result" id="materialResult"></div>
+</form>
+
+<h2>Dodavanje projekta</h2>
+<form id="projectForm">
+    <label>Naziv projekta: <input type="text" name="proj_name" required></label>
+    <label>Klijent: <input type="text" name="client"></label>
+    <label>Datum početka: <input type="date" name="date_start"></label>
+    <label>Datum završetka: <input type="date" name="date_end"></label>
+    <button type="submit">Dodaj projekat</button>
+    <div class="result" id="projectResult"></div>
+</form>
+
+<h2>Potrošnja materijala po projektu</h2>
+<form id="useMaterialForm">
+    <label>Izaberite projekat (ID): <input type="number" name="project_id" required></label>
+    <label>Izaberite materijal (ID): <input type="number" name="material_id" required></label>
+    <label>Količina: <input type="number" step="0.01" name="quantity_used" required></label>
+    <button type="submit">Potroši materijal</button>
+    <div class="result" id="useResult"></div>
+</form>
+
+<h2>Trenutni lager materijala</h2>
+<table id="materialsTable" border="1" style="border-collapse: collapse; width: 80%; margin-top: 20px;">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Naziv</th>
+            <th>Tip</th>
+            <th>Proizvođač</th>
+            <th>Količina</th>
+            <th>Minimalna količina</th>
+            <th>Jedinica</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Materijali će biti dodati ovde preko JS -->
+    </tbody>
+</table>
+
+<script>
+// Dodavanje materijala
+document.getElementById('materialForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    let formData = new FormData(this);
+    fetch('add_material.php', { method: 'POST', body: formData })
+        .then(res => res.text())
+        .then(data => { 
+            document.getElementById('materialResult').innerHTML = data; 
+            this.reset();
+            loadMaterials(); // osvežavanje tabele nakon dodavanja
+        });
+});
+
+// Dodavanje projekta
+document.getElementById('projectForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    let formData = new FormData(this);
+    fetch('add_project.php', { method: 'POST', body: formData })
+        .then(res => res.text())
+        .then(data => { 
+            document.getElementById('projectResult').innerHTML = data; 
+            this.reset();
+        });
+});
+
+// Potrošnja materijala
+document.getElementById('useMaterialForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    let formData = new FormData(this);
+    fetch('use_material.php', { method: 'POST', body: formData })
+        .then(res => res.text())
+        .then(data => { 
+            document.getElementById('useResult').innerHTML = data; 
+            this.reset();
+            loadMaterials(); // osvežavanje tabele nakon potrošnje
+        });
+});
+
+// Učitavanje materijala
+function loadMaterials(){
+    fetch('get_materials.php')
+    .then(res => res.json())
+    .then(data => {
+        let tbody = document.querySelector("#materialsTable tbody");
+        tbody.innerHTML = "";
+        data.forEach(mat => {
+            let className = (mat.quantity < mat.min_quantity) ? "warning" : "";
+            let row = `<tr>
+                <td>${mat.materials_id}</td>
+                <td>${mat.mat_name}</td>
+                <td>${mat.mat_type}</td>
+                <td>${mat.manufacturer}</td>
+                <td class="${className}">${mat.quantity}</td>
+                <td>${mat.min_quantity}</td>
+                <td>${mat.unit}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    });
+}
+
+// Učitaj materijale pri učitavanju stranice
+window.onload = loadMaterials;
+</script>
+
+</body>
+</html>
